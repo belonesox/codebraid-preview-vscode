@@ -10,8 +10,10 @@ const vscode = acquireVsCodeApi();
 
 let editorMinLine = 0;
 let editorMaxLine = 0;
+let editorFileName = "";
 let codebraidSourceposMetaElement = document.getElementById('codebraid-sourcepos-meta');
 if (codebraidSourceposMetaElement) {
+    editorFileName = codebraidSourceposMetaElement.getAttribute('data-codebraid-sourcepos-filename');
     editorMinLine = Number(codebraidSourceposMetaElement.getAttribute('data-codebraid-sourcepos-min'));
     editorMaxLine = Number(codebraidSourceposMetaElement.getAttribute('data-codebraid-sourcepos-max'));
 }
@@ -266,7 +268,7 @@ function scrollEditorWithPreview() {
         }
     );
 }
-let webviewVisibleObserver = new IntersectionObserver(webviewVisibleTracker, {threshold: [0, 0.25, 0.5, 0.75, 1]});
+let webviewVisibleObserver = new IntersectionObserver(webviewVisibleTracker, { threshold: [0, 0.25, 0.5, 0.75, 1] });
 for (const element of document.querySelectorAll('[data-codebraid-sourcepos-start]')) {
     if (!element.hasAttribute('data-codebraid-sourcepos-lines')) {
         webviewVisibleObserver.observe(element);
@@ -300,69 +302,27 @@ document.addEventListener(
     },
     false
 );
-ondblclick = function(event) {
+ondblclick = function (event) {
     if (editorMaxLine === 0 || visibleElements.size === 0) {
         return;
     }
     let targetY = event.clientY;
-    let minLine = 0;
-    let topElement = undefined;
-    let topRect = undefined;
-    let maxLine = editorMaxLine + 1;
-    let bottomElement = undefined;
-    let bottomRect = undefined;
     for (const element of visibleElements) {
-        const startLine = Number(element.getAttribute('data-codebraid-sourcepos-start'));
-        if (startLine < minLine || startLine > maxLine) {
-            continue;
-        }
         let rect = element.getBoundingClientRect();
-        if (rect.top <= targetY) {
-            if (rect.bottom < targetY) {
-                topElement = element;
-                topRect = rect;
-                minLine = startLine;
-            } else {
-                topElement = element;
-                topRect = rect;
-                minLine = startLine;
-                bottomElement = element;
-                bottomRect = rect;
-                maxLine = startLine;
-                break;
-            }
-        } else {
-            bottomElement = element;
-            bottomRect = rect;
-            maxLine = startLine;
+        if ((rect.top <= targetY) && (rect.bottom >= targetY)) {
+            let targetLine = Number(element.getAttribute('data-codebraid-sourcepos-start'));
+            let targetFilename = element.getAttribute('data-codebraid-sourcepos-filename');
+            vscode.postMessage(
+                {
+                    command: 'codebraidPreview.moveCursor',
+                    startLine: targetLine,
+                    fileName: targetFilename,
+                }
+            );
+            return;
         }
-    }
-    let targetLine;
-    if (topElement === bottomElement) {
-        targetLine = minLine;
-    } else {
-        if (!bottomElement) {
-            bottomElement = codebraidSourceposMaxElement;
-            bottomRect = codebraidSourceposMaxElement.getBoundingClientRect();
-            maxLine = editorMaxLine;
-        }
-        if (!topElement) {
-            const scrollY = window.scrollY;
-            const ratio = (scrollY + targetY) / (scrollY + bottomRect.top);
-            targetLine = Math.max(Math.floor(ratio * (maxLine - 1)), 1);
-        } else {
-            const ratio = (targetY - topRect.bottom) / (bottomRect.top - topRect.bottom);
-            targetLine = minLine + Math.floor(ratio * (maxLine - minLine - 1));
-        }
-    }
-    vscode.postMessage(
-        {
-            command: 'codebraidPreview.moveCursor',
-            startLine: targetLine,
-        }
-    );
-};
-
+    };
+}
 
 const toolbarDiv = document.createElement('div');
 document.body.append(toolbarDiv);
@@ -374,7 +334,7 @@ toolbarRefreshDiv.innerHTML = '&#xeb37';
 toolbarRefreshDiv.addEventListener(
     'click',
     () => {
-        vscode.postMessage({command: 'codebraidPreview.refresh'});
+        vscode.postMessage({ command: 'codebraidPreview.refresh' });
     },
     false
 );

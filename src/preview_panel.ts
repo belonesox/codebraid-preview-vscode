@@ -1152,27 +1152,27 @@ ${message}
 				return;
 			}
 			case 'codebraidPreview.moveCursor': {
-				if (!this.visibleEditor) {
-					return;
-				}
+				// if (!this.visibleEditor) {
+				// 	return;
+				// }
 				this.isScrollingEditorWithPreview = true;
-				let cursorFileName: string | undefined;
 				// Preview line numbers are one-indexed
-				let cursorStartLine: number = message.startLine - this.sourceOffset - 1;
+				let cursorStartLine =  message.startLine;
+				let cursorFileName = message.fileName;
 				// Don't adjust column index from one-indexed, so that after
 				// rather than before character
-				const cursorColumn: number = message.startColumn ? message.startColumn : 0;
-				for (const [fileName, [fileStartLine, fileEndLine]] of this.sourceMap) {
-					if (fileStartLine <= cursorStartLine && cursorStartLine <= fileEndLine) {
-						cursorFileName = fileName;
-						cursorStartLine -= fileStartLine - 1;
-						break;
-					}
-				}
-				if (!cursorFileName) {
-					return;
-				}
-				const viewColumn = this.visibleEditor.viewColumn;
+				// const cursorColumn: number = message.startColumn ? message.startColumn : 0;
+				// for (const [fileName, [fileStartLine, fileEndLine]] of this.sourceMap) {
+				// 	if (fileStartLine <= cursorStartLine && cursorStartLine <= fileEndLine) {
+				// 		cursorFileName = fileName;
+				// 		cursorStartLine -= fileStartLine - 1;
+				// 		break;
+				// 	}
+				// }
+				// if (!cursorFileName) {
+				// 	return;
+				// }
+				const viewColumn = 1; //!!! Todo Columns from Source Pos;
 				const document = await vscode.workspace.openTextDocument(cursorFileName);
 				if (!this.panel) {
 					return;
@@ -1182,7 +1182,7 @@ ${message}
 				if (!this.panel) {
 					return;
 				}
-				const position = new vscode.Position(cursorStartLine, cursorColumn);
+				const position = new vscode.Position(cursorStartLine, viewColumn);
         		const selection = new vscode.Selection(position, position);
         		editor.selection = selection;
 				const range = new vscode.Range(cursorStartLine, 0, cursorStartLine, 0);
